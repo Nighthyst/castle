@@ -25,7 +25,7 @@ async function getProperties()
   await page.focus('#rc_destination_availability_type_areaSelectBoxItText');
   await page.click('#rc_destination_availability_type_areaSelectBoxItText');
   await page.keyboard.type("France");
-  //await page.click('#rc_destination_availability_type_nbRoomsSelectBoxItText');
+
   await page.keyboard.type('\n');
 
   page.focus('#destinationResults > div.fastTrack.destDatePicker > form > div.formFieldset.ftrackGo > button');
@@ -75,21 +75,30 @@ async function getProperties()
     var restaurants_name = "";
 
     //We visit each website
-    var grade = special.eval_web_content_meta(page,'#tabProperty > div:nth-child(5) > div.row.propertyDesc > div.col-2-3 > div > div.col-1-2.propertyInfo > div.propertyInfo__ratings > div > div.qualitelis-rating > span > div');
-    console.log(grade["data-reviewrate"]);
+    await page.waitForSelector("#popinTripAdvisor > div.rc-popinQualitelis-header > span > div", {timeout: 0});
+    await page.waitFor(5000);
+    var grade = await page.evaluate(() => document.querySelector("#popinTripAdvisor > div.rc-popinQualitelis-header > span > div"));
+
+    console.log(grade);
     var price = await special.eval_web_href_link(page,"body > div.hotelHeader > div.innerHotelHeader > div > div > span.price");
     var link_resto = await special.eval_web_content_link(page,'body > div.jsSecondNav.will-stick > ul.jsSecondNavMain > li:nth-child(2) > a');
     console.log(link_resto);
     var restaurants_name = await special.web_href_link(browser,link_resto[0],'body > div.jsSecondNav.will-stick > ul.jsSecondNavSub.active > li > a');
-    //console.log(restaurants_name.length);
+
     if(restaurants_name.length === 0)
     {
-      console.log("Oups !");
       restaurants_name = await special.eval_web_href_link(page,'div > div.row.hotelTabsHeader > div:nth-child(1) > div.hotelTabsHeaderTitle > h3');
     }
     ranking[i]["resto"] = restaurants_name;
-    ranking[i]["grade"] = grade["data-reviewrate"];
+    //ranking[i]["grade"] = grade[Object.keys(grade)[0]]["reviewrate"];
     ranking[i]["price"] = price;
+    if(grade[Object.keys(grade)[0]] === undefined)
+    {
+      ranking[i]["grade"] = -1;
+    }
+    else {
+      ranking[i]["grade"] = grade[Object.keys(grade)[0]]["reviewrate"];
+    }
     /*
     ranking[i]["resto"].forEach(function(element){
 
