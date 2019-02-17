@@ -1,6 +1,9 @@
 const puppeteer = require('puppeteer');
 const special = require('../web');
 
+var debut = '25/02/2019';
+var fin = '28/02/2019';
+
 async function getProperties()
 {
 
@@ -9,16 +12,16 @@ async function getProperties()
   const page = await browser.newPage();
   await page.goto('https://www.relaischateaux.com/fr/destinations/europe/espagne', {waitUntil: 'networkidle2',timeout:0});   await page.waitForSelector('#rc_destination_availability_type_start');
 
-  await page.screenshot({ path: 'form2.png', fullPage: true });
+
   //type the name
   await page.focus('#rc_destination_availability_type_start');
   await page.click('#rc_destination_availability_type_start');
-  await page.keyboard.type('25/02/2019');
+  await page.keyboard.type(debut);
 
   //type the email
   await page.focus('#rc_destination_availability_type_end');
   await page.click('#rc_destination_availability_type_end');
-  await page.keyboard.type('28/02/2019');
+  await page.keyboard.type(fin);
 
   //type the message
 
@@ -34,87 +37,82 @@ async function getProperties()
   page.click('#destinationResults > div.fastTrack.destDatePicker > form > div.formFieldset.ftrackGo > button');
   await page.waitFor(30000);
 
-
-  await page.screenshot({ path: 'form.png', clip: {x: 0, y:0, width: 1024, height: 800}});
-
-  const typeResa = await special.eval_web_href_link(page,'#destinationResults > div > div > div:nth-child(1) > div > div > div > div.slick-slide.slick-active > div > span');
-  console.log(typeResa);
-
-  var dispo = await page.evaluate((selector) => {
+  const nbPages = await page.evaluate((selector) => {
 
   const anchors_node_list = document.querySelectorAll(selector);
 
   const anchors = [...anchors_node_list];
-  return anchors.map(link => link.textContent);
-  }, '#destinationResults > div > div > div:nth-child(2) > div.priceTag > a');
-  console.log(dispo);
+  return anchors.map(link => link.innerText);
+  }, '#destPagination > ul > li> a');
+  console.log(nbPages);
+  console.log(Number(nbPages[nbPages.length-2]));
+  //console.log("Here the loop start");
 
-
-  var prices = await page.evaluate((selector) => {
-
-  const anchors_node_list = document.querySelectorAll(selector);
-
-  const anchors = [...anchors_node_list];
-  return anchors.map(link => link.textContent);
-  }, '#destinationResults > div > div > div:nth-child(2) > div.priceTag > div > span.price > span.price');
-  console.log(prices);
-  var links = await special.eval_web_content_link(page,'#destinationResults > div > div > div:nth-child(2) > h3 > a');
-
-  console.log(links);
-  console.log(dispo);
-  for(var i = 0; i < links.length; i++)
+  for(var i = 1; i <= Number(nbPages[nbPages.length-2]); i++)
   {
-    if((dispo[i] === "Réserver")  && (typeResa[i] === "Hôtel + Restaurant"))
+    const typeResa = await special.eval_web_href_link(page,'#destinationResults > div > div > div:nth-child(1) > div > div > div > div.slick-slide.slick-active > div > span');
+    //console.log(typeResa);
+    var dispo = await page.evaluate((selector) => {
+
+    const anchors_node_list = document.querySelectorAll(selector);
+
+    const anchors = [...anchors_node_list];
+    return anchors.map(link => link.textContent);
+    }, '#destinationResults > div > div > div:nth-child(2) > div.priceTag > a');
+
+    var links = await special.eval_web_content_link(page,'#destinationResults > div > div > div:nth-child(2) > h3 > a');
+    //console.log(links);
+
+    for(var j = 0; j < links.length; j++)
     {
-      ranking.push({"dispo" : dispo[i], "url" : links[i], "grade" : -1, "price" : -1, "resto" : [], "stars_resto" : []});
-    }
-  }
-  for(var i = 0; i < ranking.length; i++)
-  {
-    page.goto(ranking[i]["url"]);
-    var restaurants_name = "";
-
-    //We visit each website
-    await page.waitForSelector("#popinTripAdvisor > div.rc-popinQualitelis-header > span > div", {timeout: 0});
-    await page.waitFor(5000);
-    var grade = await page.evaluate(() => document.querySelector("#popinTripAdvisor > div.rc-popinQualitelis-header > span > div"));
-
-    console.log(grade);
-    var price = await special.eval_web_href_link(page,"body > div.hotelHeader > div.innerHotelHeader > div > div > span.price");
-    var link_resto = await special.eval_web_content_link(page,'body > div.jsSecondNav.will-stick > ul.jsSecondNavMain > li:nth-child(2) > a');
-    console.log(link_resto);
-    var restaurants_name = await special.web_href_link(browser,link_resto[0],'body > div.jsSecondNav.will-stick > ul.jsSecondNavSub.active > li > a');
-
-    if(restaurants_name.length === 0)
-    {
-      restaurants_name = await special.eval_web_href_link(page,'div > div.row.hotelTabsHeader > div:nth-child(1) > div.hotelTabsHeaderTitle > h3');
-    }
-    ranking[i]["resto"] = restaurants_name;
-    //ranking[i]["grade"] = grade[Object.keys(grade)[0]]["reviewrate"];
-    ranking[i]["price"] = price;
-    if(grade[Object.keys(grade)[0]] === undefined)
-    {
-      ranking[i]["grade"] = -1;
-    }
-    else {
-      ranking[i]["grade"] = grade[Object.keys(grade)[0]]["reviewrate"];
-    }
-    /*
-    ranking[i]["resto"].forEach(function(element){
-
-      var matches = stringSimilarity.findBestMatch(element,star_restaurants);
-      if(matches.bestMatch.rating >= 0.75)
+      if((dispo[j] === "Réserver")  && (typeResa[j] === "Hôtel + Restaurant"))
       {
-        ranking[i]["stars_resto"].push("Yes");
+        ranking.push({"dispo" : dispo[j], "url" : links[j], "grade" : -1, "price" : -1, "resto" : [], "stars_resto" : []});
       }
-      else
+    }
+    for(var j = 0; j < ranking.length; j++)
+    {
+      var second_page = await browser.newPage();
+      second_page.goto(ranking[j]["url"],{waitUntil: 'networkidle2',timeout:0});
+      var restaurants_name = "";
+
+      //We visit each website
+      await second_page.waitForSelector("#popinTripAdvisor > div.rc-popinQualitelis-header > span > div", {timeout: 0});
+      await second_page.waitFor(5000);
+      var grade = await second_page.evaluate(() => document.querySelector("#popinTripAdvisor > div.rc-popinQualitelis-header > span > div"));
+
+      console.log(grade);
+      var price = await special.eval_web_href_link(second_page,"body > div.hotelHeader > div.innerHotelHeader > div > div > span.price");
+      var link_resto = await special.eval_web_content_link(second_page,'body > div.jsSecondNav.will-stick > ul.jsSecondNavMain > li:nth-child(2) > a');
+      console.log(link_resto);
+      var restaurants_name = await special.web_href_link(browser,link_resto[0],'body > div.jsSecondNav.will-stick > ul.jsSecondNavSub.active > li > a');
+
+      if(restaurants_name.length === 0)
       {
-        ranking[i]["stars_resto"].push("No");
+        restaurants_name = await special.eval_web_href_link(second_page,'div > div.row.hotelTabsHeader > div:nth-child(1) > div.hotelTabsHeaderTitle > h3');
+      }
+      ranking[j]["resto"] = restaurants_name;
+      //ranking[i]["grade"] = grade[Object.keys(grade)[0]]["reviewrate"];
+      ranking[j]["price"] = price;
+      if(grade[Object.keys(grade)[0]] === undefined)
+      {
+        ranking[j]["grade"] = -1;
+      }
+      else {
+        ranking[j]["grade"] = grade[Object.keys(grade)[0]]["reviewrate"];
+      }
+      await second_page.close();
+
+
       }
 
-    });
-    */
-  }
+      await page.$eval("#destPagination > ul > li.next > a", e => e.click());
+      await page.waitFor(500);
+      await page.$eval("#destPagination > ul > li.next > a", e => e.click());
+      await page.waitFor(30000);
+      console.log("Et un hop un tour !");
+
+    }
   return ranking;
 }
 
