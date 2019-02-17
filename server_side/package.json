@@ -1,0 +1,23 @@
+{
+  "name": "scrape",
+  "version": "1.0.0",
+  "description": "web scraping tutorial",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.2",
+    "express": "^4.16.4",
+    "fs": "0.0.1-security",
+    "puppeteer": "^1.12.1",
+    "puppeteer-extra-plugin-click-and-wait": "^2.1.2",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.2",
+    "string-similarity": "^3.0.0",
+    "yarn": "^1.13.0"
+  }
+}
