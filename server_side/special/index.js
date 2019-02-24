@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-firefox');
 
 async function web_content_link(browser,url,selector)
 {
@@ -8,7 +8,7 @@ async function web_content_link(browser,url,selector)
 
   const result = await page.evaluate((selector) => {
 
-  const anchors_node_list = document.querySelectorAll(selector);
+    const anchors_node_list = document.querySelectorAll(selector);
 
   const anchors = [...anchors_node_list];
   console.log(anchors);
